@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { StudyRecord } from "../types";
+import { downloadAllAudio, getAudioDownloadTotal, getCachedAudioCount, clearAudioCache } from "../utils/offlineAudio";
 
 interface Props {
   record: StudyRecord;
@@ -22,6 +23,34 @@ export const SettingsScreen = ({
   const [editingTestDate, setEditingTestDate] = useState(false);
   const [editingClearDate, setEditingClearDate] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [audioTotal] = useState(() => getAudioDownloadTotal());
+  const [cachedCount, setCachedCount] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadResult, setDownloadResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCachedAudioCount().then(setCachedCount);
+  }, []);
+
+  const handleDownloadAudio = async () => {
+    setDownloading(true);
+    setDownloadResult(null);
+    setDownloadProgress(0);
+    const { succeeded, failed } = await downloadAllAudio(({ done, total }) => {
+      setDownloadProgress(Math.round((done / total) * 100));
+    });
+    setDownloading(false);
+    setDownloadResult(failed > 0 ? `完了：${succeeded}件成功、${failed}件失敗` : `完了：${succeeded}件すべて保存しました`);
+    getCachedAudioCount().then(setCachedCount);
+  };
+
+  const handleClearAudioCache = async () => {
+    await clearAudioCache();
+    setDownloadResult(null);
+    getCachedAudioCount().then(setCachedCount);
+  };
 
   const shareUrl = `${window.location.origin}/parent/${record.shareCode}`;
   const handleCopy = () => {
@@ -103,6 +132,32 @@ export const SettingsScreen = ({
             <div className="toggle-knob" />
           </div>
         </div>
+      </div>
+
+      {/* ===== 音声の一括ダウンロード ===== */}
+      <div className="setting-section">
+        <h3 className="setting-section-title">音声の一括ダウンロード</h3>
+        <p className="setting-desc">
+          電車の中など電波が弱い場所でも発音がすぐ再生できるように、あらかじめ全単語の音声をダウンロードしておけます。
+          {cachedCount !== null && ` （現在 ${cachedCount} / ${audioTotal} 件保存済み）`}
+        </p>
+        {downloading ? (
+          <div className="setting-row">
+            <span className="setting-value">ダウンロード中… {downloadProgress}%</span>
+          </div>
+        ) : (
+          <div className="setting-row">
+            <button className="btn-setting-edit" onClick={handleDownloadAudio}>
+              一括ダウンロード
+            </button>
+            {cachedCount !== null && cachedCount > 0 && (
+              <button className="btn-text-small" onClick={handleClearAudioCache}>
+                削除
+              </button>
+            )}
+          </div>
+        )}
+        {downloadResult && <p className="share-note">{downloadResult}</p>}
       </div>
 
       {/* ===== 1セッションの問題数 ===== */}

@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import type { Word } from "../types";
-import { speakEnglish } from "../utils/speech";
+import { playExampleAudio } from "../utils/speech";
 
 interface Props {
   word: Word;
@@ -24,7 +24,7 @@ export const ExamplePanel = ({
   const [showJa, setShowJa] = useState(false);
 
   const handleSpeakExample = () => {
-    speakEnglish(word.exampleEn, 0.85);
+    playExampleAudio(word.id, word.exampleEn);
   };
 
   if (!open) {

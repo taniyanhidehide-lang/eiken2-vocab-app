@@ -57,6 +57,34 @@ export const speakEnglish = async (text: string, rate = 0.9): Promise<void> => {
   window.speechSynthesis.speak(utterance);
 };
 
+// 現在再生中の事前録音オーディオ（多重再生防止用）
+let currentAudio: HTMLAudioElement | null = null;
+
+const playAudioFile = (url: string, onFail: () => void): void => {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  const audio = new Audio(url);
+  currentAudio = audio;
+  audio.addEventListener("error", onFail, { once: true });
+  audio.play().catch(onFail);
+};
+
+// 単語の発音を再生する（事前生成した音声ファイルを優先し、失敗時はTTSにフォールバック）
+export const playWordAudio = (wordId: string, fallbackText: string): void => {
+  playAudioFile(`/audio/${wordId}.mp3`, () => {
+    void speakEnglish(fallbackText);
+  });
+};
+
+// 例文の読み上げを再生する（事前生成した音声ファイルを優先し、失敗時はTTSにフォールバック）
+export const playExampleAudio = (wordId: string, fallbackText: string): void => {
+  playAudioFile(`/audio/${wordId}-ex.mp3`, () => {
+    void speakEnglish(fallbackText, 0.85);
+  });
+};
+
 // 正解音（明るい上昇音）
 export const playCorrectSound = (): void => {
   try {
@@ -109,5 +137,9 @@ export const isSpeechAvailable = (): boolean => {
 export const stopSpeech = (): void => {
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
+  }
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
   }
 };

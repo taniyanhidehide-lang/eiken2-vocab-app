@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { QuizItem, QuizResult } from "../types";
-import { speakEnglish, playCorrectSound, playWrongSound } from "../utils/speech";
+import { playWordAudio, playCorrectSound, playWrongSound } from "../utils/speech";
 import { ExamplePanel } from "./ExamplePanel";
 import { words } from "../data/words";
 
@@ -56,7 +56,7 @@ export const QuizScreen = ({ quizList, onFinish, onHome, isReview = false, audio
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
 
     const timer = setTimeout(() => {
-      speakEnglish(current.word.pronunciationText);
+      playWordAudio(current.word.id, current.word.pronunciationText);
     }, 100);
 
     return () => {
@@ -206,7 +206,7 @@ export const QuizScreen = ({ quizList, onFinish, onHome, isReview = false, audio
         )}
         <button
           className="btn-speak"
-          onClick={() => speakEnglish(current.word.pronunciationText)}
+          onClick={() => playWordAudio(current.word.id, current.word.pronunciationText)}
         >
           🔊 もう一度発音
         </button>

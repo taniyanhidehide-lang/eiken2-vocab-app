@@ -1,0 +1,25 @@
+/* ==========================================
+   グローバルリセット
+   App.cssで上書きするので最小限のみ
+   ========================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+p {
+  margin: 0;
+}

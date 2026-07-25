@@ -3,9 +3,39 @@
 // 英語の発音を担当します
 // ==========================================
 
+// Android Chrome等では初回のgetVoices()が空配列を返すことがあるため、
+// voiceschangedイベントを待ってから声を選ぶようにする（音声取得のキャッシュ）
+let voicesReadyPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+
+const loadVoices = (): Promise<SpeechSynthesisVoice[]> => {
+  if (voicesReadyPromise) return voicesReadyPromise;
+
+  voicesReadyPromise = new Promise((resolve) => {
+    const existing = window.speechSynthesis.getVoices();
+    if (existing.length > 0) {
+      resolve(existing);
+      return;
+    }
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.speechSynthesis.removeEventListener("voiceschanged", finish);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    window.speechSynthesis.addEventListener("voiceschanged", finish);
+    // voiceschangedが発火しない端末もあるため、タイムアウトで諦めて進める
+    setTimeout(finish, 500);
+  });
+
+  return voicesReadyPromise;
+};
+
 // 英語テキストを音声で読み上げる
-export const speakEnglish = (text: string, rate = 0.9): void => {
+export const speakEnglish = async (text: string, rate = 0.9): Promise<void> => {
   if (!window.speechSynthesis) return;
+
+  const voices = await loadVoices();
 
   // 前の発音を止める
   window.speechSynthesis.cancel();
@@ -17,7 +47,6 @@ export const speakEnglish = (text: string, rate = 0.9): void => {
   utterance.volume = 1.0;
 
   // 英語音声を優先して選択する
-  const voices = window.speechSynthesis.getVoices();
   const englishVoice = voices.find(
     (v) => v.lang.startsWith("en") && v.localService
   ) || voices.find((v) => v.lang.startsWith("en"));
